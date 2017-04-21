@@ -1,0 +1,95 @@
+---
+title: "EDAV Project - Jager Hartman"
+output:
+  html_document: default
+  html_notebook: default
+---
+###Topic 1 - Analyzing Congressional Floor Debates
+
+Here in we analyze the word usage of congress persons when giving speeches on the floor of Congress.  The analysis that follows looks at top words used across parties and votes, interrogative word usage and top ranked bigrams used to predict vote and party via a logistic regression.  The results that follow show that little is said on the floor of congress and that gauging a congress person's position is best done through who the candidate associates with.  The data are sourced from Matt Thomas, Bo Pang, and Lillian Lee, "Get out the vote: Determining support or opposition from Congressional floor-debate transcripts", Proceedings of EMNLP (2006).
+
+```{r}
+library(ggplot2)
+library(gridExtra)
+library(dplyr)
+
+edav_table <- read.csv("~/EDAV/edav_table.csv")
+rvd_uni <- read.csv("~/EDAV/r_v_d_uni.csv")
+rvd_bi <- read.csv("~/EDAV/r_v_d_bi.csv")
+nvy_uni <- read.csv("~/EDAV/n_v_y_uni.csv")
+nvy_bi <- read.csv("~/EDAV/n_v_y_bi.csv")
+
+interrogative = c("which", "whose", "what", "would", "who", "when", "where", "can", "whom", "how", "why", "whether")
+
+texts = c('RN', 'RY', 'DN', 'DY')
+totals = c(11, 356, 291, 44)
+
+table = edav_table[order(-edav_table$total),]
+top_50 = table[1:10,]
+
+
+p1 <- ggplot(data=top_50, aes(x=X, y=RN)) + geom_bar(stat="identity", fill = rgb(1,0,0), alpha=0.5)  + coord_flip() + labs(title='Republicans Voted No', x='Word', y='Frequency')
+p2 <- ggplot(data=top_50, aes(x=X, y=RY)) + geom_bar(stat="identity", fill = rgb(1,0,0), alpha=0.5) + coord_flip() + labs(title='Republicans Voted Yes', x='Word', y='Frequency')
+p3 <- ggplot(data=top_50, aes(x=X, y=DN)) + geom_bar(stat="identity", fill = rgb(0,0,1), alpha=0.5) + coord_flip() + labs(title='Democrats Voted No', x='Word', y='Frequency')
+p4 <- ggplot(data=top_50, aes(x=X, y=DY)) + geom_bar(stat="identity", fill = rgb(0,0,1), alpha=0.5) + coord_flip() + labs(title='Democrats Voted Yes', x='Word', y='Frequency')
+
+grid.arrange(p1,p2,p3,p4)
+```
+The above plot analyzes the top 10 words used across the entire dataset.  Since the congressional floor debates occured so close to 2001, the children were of a concern.  The rest of the top ranked words were of formalities.
+
+
+```{r}
+interrogative_table = table[table$X %in% interrogative, ]
+
+p1 <- ggplot(data=interrogative_table, aes(x=X, y=RN)) + geom_bar(stat="identity", fill = rgb(1,0,0), alpha=0.5)  + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(title='Republicans Voted No', x='Word', y='Frequency') + ylim(0,2)
+p2 <- ggplot(data=interrogative_table, aes(x=X, y=RY)) + geom_bar(stat="identity", fill = rgb(1,0,0), alpha=0.5) + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(title='Republicans Voted Yes', x='Word', y='Frequency')+ ylim(0,2)
+p3 <- ggplot(data=interrogative_table, aes(x=X, y=DN)) + geom_bar(stat="identity", fill = rgb(0,0,1), alpha=0.5) + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(title='Democrats Voted No', x='Word', y='Frequency') + ylim(0,2)
+p4 <- ggplot(data=interrogative_table, aes(x=X, y=DY)) + geom_bar(stat="identity", fill = rgb(0,0,1), alpha=0.5) + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(title='Democrats Voted Yes', x='Word', y='Frequency') + ylim(0,2)
+grid.arrange(p1,p2,p3,p4) 
+```
+Analyzing interrogative words may show how politicians voice their views about different topics.  One would assume that a politician would use more interrogative words when voting no as opposed to voting yes.  This is case with regards to the words would, can, which and who.  Also there appears to be slight differences in interrogative word usage between parties though nothing entirely obvious from the above figures.
+
+
+
+
+```{r}
+#p1 <- ggplot(data = rvd_uni, aes(x=reorder(Republican.Features, -Republican.Coef), y=Republican.Coef)) + geom_bar(stat="identity", fill = rgb(1,0,0), alpha=0.5)  + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(title='Republican Speeches', x='Unigram', y='Coefficient') + ylim(0,3.2)
+             
+#p2 <- ggplot(data=rvd_uni, aes(x=reorder(Democratic.Features, - Democratic.Coef), y=Democratic.Coef)) + geom_bar(stat="identity", fill = rgb(0,0,1), alpha=0.5) + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(title='Democratic Speeches', x='Unigram', y='Coefficient') + ylim(0,3.2)
+
+p3 <- ggplot(data = rvd_bi, aes(x=reorder(Republican.Features, -Republican.Coef), y=Republican.Coef)) + geom_bar(stat="identity", fill = rgb(1,0,0), alpha=0.5)  + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(title='Republican Speeches', x='Bigram', y='Coefficient') + ylim(0,3.2)
+             
+p4 <- ggplot(data=rvd_bi, aes(x=reorder(Democratic.Features, - Democratic.Coef), y=Democratic.Coef)) + geom_bar(stat="identity", fill = rgb(0,0,1), alpha=0.5) + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(title='Democratic Speeches', x='Bigram', y='Coefficient') + ylim(0,3.2)
+
+#grid.arrange(p2, p1, ncol = 2) 
+grid.arrange(p3, p4, ncol=2)
+```
+
+The above plots detail bigrams used during congressional speeches and the bigrams' respective coefficients learned through a baseline logistic regression model.  Only the top 20 most important features are shown.  It should be of note that the bigrams which were the most indicative towards political standing represent the formalities required to give a speech on the floor.  The gentleman/gentlewoman references are used to communicate to members.  The time yield reference is the politician yielding the rest of their allotted time.  Since a party member is likely to give their remaining time to members of the same party, these terms are most indicative of party affiliation.  The implications of such a large portion of speeches being identified through congressional formality shows that not much is said on the floor of congress.  These plots suggest that arguments are built on the basis of naming names and pointing fingers and real issues are not discussed as thoroughly as one would hope.
+
+
+
+```{r}
+#p1 <- ggplot(data=nvy_uni, aes(x=reorder(No.Features, -No.Coef), y=No.Coef)) + geom_bar(stat="identity", fill = rgb(1,0,1), alpha=0.5) + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(title='Voted No', x='Unigram', y='Coefficient')
+
+#p2 <- ggplot(data=nvy_uni, aes(x=reorder(Yes.Features, -Yes.Coef), y=Yes.Coef)) + geom_bar(stat="identity", fill = rgb(0, 1, 0), alpha=0.5) + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(title='Voted Yes', x='Unigram', y='Coefficient')
+
+p3 <-ggplot(data=nvy_bi, aes(x=reorder(No.Features, -No.Coef), y=No.Coef)) + geom_bar(stat="identity", fill = rgb(1,0,1), alpha=0.5) + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(title='Voted No', x='Bigram', y='Coefficient')
+
+
+p4 <- ggplot(data=nvy_bi, aes(x=reorder(Yes.Features, -Yes.Coef), y=Yes.Coef)) + geom_bar(stat="identity", fill = rgb(0, 1, 0), alpha=0.5) + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(title='Voted Yes', x='Bigram', y='Coefficient')
+
+#grid.arrange(p1,p2, ncol = 2) 
+grid.arrange(p3,p4, ncol = 2)
+
+
+
+
+
+
+```
+Similar to determining the speaker's political leanings, the sentiment a speaker holds towards a bill is masked by the formalities required by Congress and their predilection to stay within their party.  The graph above shows that a congress person's predicted vote is determined mostly by who they are speaking to and who is speaking before/after.  
+
+The data had very few issues with regards to quality other than names and bills occuring repeatedly.  The data are in the format of continuous text documents labeled by file names.  To work around the data quality issues any string beginning with 'mr' or 'ms' was removed along with 'xz(digits)' which were in place to represent names.
+
+Politicians don't say much of anything when on the floor of Congress.  There is no clear intellectual debate that occurs that the people who voted for these Congressmen may be hopeful of.  There also doesn't appear to be a common theme or a common dialectic occur in Congress.  The majority of indicators towards sentiment and political offiliation occur through political formalities and who the politician associates with.
